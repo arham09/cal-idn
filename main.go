@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/arham09/cal-idn/cache"
 )
 
 const (
 	reset = "\033[0m"
 	red   = "\033[31m"
+	green = "\033[32m"
+
+	key       = "holiday-schedule"
+	cacheFile = "./cache.json"
+
+	holidayExternalData = "https://raw.githubusercontent.com/guangrei/APIHariLibur_V2/main/holidays.json"
 )
 
 func main() {
@@ -41,14 +50,13 @@ func main() {
 	}
 
 	for i := 1; i <= 7-int(firstDay); i++ {
-		color := reset
 		date := firstOfMonth.AddDate(0, 0, i-1)
-		if holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]; ok {
-			holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s: %s", date.Day(), date.Month().String(), holiday))
-			color = red
+		holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]
+		if ok {
+			holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s - %s", date.Day(), date.Month().String(), holiday))
 		}
 
-		fmt.Printf("%s%2d%s ", color, date.Day(), reset)
+		printDate(date.Day(), ok, date.Day() == now.Day())
 	}
 
 	fmt.Printf("\n")
@@ -58,13 +66,12 @@ func main() {
 				break
 			}
 			date := firstOfMonth.AddDate(0, 0, j-1)
-			color := reset
-			if holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]; ok {
-				holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s: %s", date.Day(), date.Month().String(), holiday))
-				color = red
+			holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]
+			if ok {
+				holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s - %s", date.Day(), date.Month().String(), holiday))
 			}
 
-			fmt.Printf("%s%2d%s ", color, date.Day(), reset)
+			printDate(date.Day(), ok, date.Day() == now.Day())
 		}
 		fmt.Printf("\n")
 	}
@@ -76,7 +83,21 @@ func main() {
 }
 
 func getHoliday() (map[string]map[string]string, error) {
-	resp, err := http.Get("https://raw.githubusercontent.com/guangrei/APIHariLibur_V2/main/holidays.json")
+	c := cache.NewCache()
+
+	if err := c.LoadFromFile(cacheFile); err != nil {
+		if os.IsNotExist(err) {
+			goto FETCH
+		}
+		return nil, err
+	}
+
+	if data, exists := c.Get(key); exists {
+		return data, nil
+	}
+
+FETCH:
+	resp, err := http.Get(holidayExternalData)
 	if err != nil {
 		return nil, err
 	}
@@ -92,5 +113,22 @@ func getHoliday() (map[string]map[string]string, error) {
 		return nil, err
 	}
 
+	c.Set(key, data, 30*24*time.Hour)
+	if err := c.SaveToFile(cacheFile); err != nil {
+		return nil, err
+	}
+
 	return data, nil
+}
+
+func printDate(date int, isHoliday, isToday bool) {
+	color := reset
+	if isToday {
+		color = green
+	}
+	if isHoliday {
+		color = red
+	}
+
+	fmt.Printf("%s%2d%s ", color, date, reset)
 }
