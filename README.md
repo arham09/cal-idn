@@ -8,12 +8,19 @@ CLI app to show monthly calendar and list of holiday within that month for Indon
 
 ## Installation
 
+### From source
 Go version > v1.16 is required
 
 ```bash
   go env -w GOBIN=$GOPATH/bin // setup GOBIN first, ignore if you already did
   cd cal-idn
   go install
+```
+
+### Brew
+```bash
+  brew tap arham09/tools
+  brew install cal-idn
 ```
 
 ## Examples
