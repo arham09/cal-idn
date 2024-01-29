@@ -41,14 +41,14 @@ func main() {
 	}
 
 	for i := 1; i <= 7-int(firstDay); i++ {
+		color := reset
 		date := firstOfMonth.AddDate(0, 0, i-1)
 		if holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]; ok {
 			holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s: %s", date.Day(), date.Month().String(), holiday))
-			fmt.Printf("%s%2d%s ", red, date.Day(), reset)
-			continue
+			color = red
 		}
 
-		fmt.Printf("%2d ", date.Day())
+		fmt.Printf("%s%2d%s ", color, date.Day(), reset)
 	}
 
 	fmt.Printf("\n")
@@ -58,13 +58,13 @@ func main() {
 				break
 			}
 			date := firstOfMonth.AddDate(0, 0, j-1)
+			color := reset
 			if holiday, ok := holidaySchedules[date.Format("2006-01-02")]["summary"]; ok {
 				holidayInMonth = append(holidayInMonth, fmt.Sprintf("%d %s: %s", date.Day(), date.Month().String(), holiday))
-				fmt.Printf("%s%2d%s ", red, date.Day(), reset)
-				continue
+				color = red
 			}
 
-			fmt.Printf("%2d ", date.Day())
+			fmt.Printf("%s%2d%s ", color, date.Day(), reset)
 		}
 		fmt.Printf("\n")
 	}
